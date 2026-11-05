@@ -3,6 +3,7 @@ import signal
 import subprocess
 import sys
 import time
+
 from colored import cprint
 
 airodump_proc = None
@@ -39,8 +40,7 @@ def configure_monitor_mode(iface, channel):
     run_command(["iw", "dev", iface, "set", "channel", str(channel)])
 
     cprint(
-        f"[+] Successfully configured {iface} in monitor mode on channel"
-        f" {channel}!",
+        f"[+] Successfully configured {iface} in monitor mode on channel {channel}!",
         "green",
     )
 
@@ -80,6 +80,7 @@ def sniffing(iface, channel, output_prefix):
         output_prefix,
         iface,
     ]
+    handshake_found = False
 
     try:
         airodump_proc = subprocess.Popen(
@@ -92,8 +93,6 @@ def sniffing(iface, channel, output_prefix):
         cprint("[*] Engine running smoothly. Reconnect your phone now...", "blue")
         cprint("[*] Monitoring for incoming handshakes...", "blue")
 
-        handshake_notified = False
-
         while True:
             line = airodump_proc.stdout.readline()
             if not line:
@@ -104,17 +103,14 @@ def sniffing(iface, channel, output_prefix):
             if "WPA handshake:" in line:
                 clean_line = line.strip()
                 parts = clean_line.split("WPA handshake:")
-                if len(parts) > 1 and not handshake_notified:
+                if len(parts) > 1:
                     mac_info = parts[1].strip().split()[0]
                     cprint(
                         f"\n[+] SUCCESS: Captured WPA Handshake for BSSID: {mac_info}",
                         "green",
                     )
-                    cprint(
-                        "[*] You can press Ctrl+C now to stop the script safely.",
-                        "blue",
-                    )
-                    handshake_notified = True
+                    handshake_found = True
+                    break
 
     except KeyboardInterrupt:
         cprint("\n[*] Ctrl+C detected! Stopping airodump-ng safely...", "blue")
@@ -124,3 +120,6 @@ def sniffing(iface, channel, output_prefix):
             airodump_proc.send_signal(signal.SIGINT)
             airodump_proc.wait()
         configure_default_mode(iface)
+
+    target_file = f"{output_prefix}-01.cap"
+    return handshake_found, target_file

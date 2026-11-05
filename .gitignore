@@ -10,3 +10,8 @@ wheels/
 .venv
 .python-version
 uv.lock
+*.cap
+*.csv
+*.kismet.csv
+*.kismet.netxml
+*.log.csv
