@@ -5,6 +5,7 @@ import sys
 from colored import Fore, Style
 
 import packet_capture as pc
+from monitor import configure_monitor_mode
 
 
 def main() -> None:
@@ -22,7 +23,7 @@ def main() -> None:
         f" {Style.reset}"
     )
 
-    pc.configure_monitor_mode(IFACE, CHANNEL)
+    configure_monitor_mode(IFACE, CHANNEL)
 
     success, capture_file = pc.sniffing(IFACE, CHANNEL, OUTPUT_PREFIX)
 
@@ -44,7 +45,9 @@ def main() -> None:
 
             print(f"\n{Fore.cyan}[*] Launching aircrack-ng session...{Style.reset}")
             try:
-                subprocess.run(["aircrack-ng", "-w", wordlist, capture_file])
+                subprocess.run(
+                    ["aircrack-ng", "-w", wordlist, capture_file], check=False
+                )
             except FileNotFoundError:
                 print(
                     f"{Fore.red}[-] Error: aircrack-ng executable not found on this"
