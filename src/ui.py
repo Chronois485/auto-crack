@@ -8,7 +8,7 @@ from constants import (
     WINDOW_HEIGHT,
     WINDOW_WIDTH,
 )
-from monitor import get_mode
+from monitor import configure_default_mode, configure_monitor_mode, get_mode
 
 
 def main(page: ft.Page):
@@ -31,10 +31,21 @@ def main(page: ft.Page):
     page.update()
 
     def handle_adapter_field_change(e):
-        current_adapter_mode_text.value = (
-            f"Interface mode: {get_mode(adapter_field.value).capitalize()}"
-        )
+        mode = get_mode(adapter_field.value)
+        current_adapter_mode_text.value = f"Interface mode: {mode.capitalize()}"
         start_scan_button.disabled = get_mode(adapter_field.value) != "monitor"
+        mode_toggle.disabled = mode != "monitor" and mode != "managed"
+        page.update()
+
+    def handle_switch_mode_change(e):
+        if e.control.value:
+            configure_monitor_mode(adapter_field.value)
+            mode = "monitor"
+        else:
+            configure_default_mode(adapter_field.value)
+            mode = "managed"
+        current_adapter_mode_text.value = f"Interface mode: {mode.capitalize()}"
+        start_scan_button.disabled = mode != "monitor"
         page.update()
 
     title_text = ft.Text(APP_TITLE, text_align=ft.TextAlign.CENTER, size=42)
@@ -57,8 +68,17 @@ def main(page: ft.Page):
     start_scan_button = ft.Button(
         content="Start scan",
         icon=ft.Icons.WIFI_FIND,
-        disabled=get_mode(adapter_field.value) != "monitor",
+        disabled=True,
     )
+
+    mode_toggle = ft.Switch(
+        label="Monitor mode",
+        value=get_mode(adapter_field.value) == "managed",
+        disabled=True,
+        on_change=handle_switch_mode_change,
+    )
+
+    button_row = ft.Row([start_scan_button, mode_toggle], alignment=HORIZONTAL_ALIGMENT)
 
     underline = ft.Divider(thickness=2)
 
@@ -80,7 +100,7 @@ def main(page: ft.Page):
             current_adapter_mode_text,
             adapter_field,
             underline,
-            start_scan_button,
+            button_row,
             ft.Container(height=10),
             data_container,
         ],
@@ -90,4 +110,4 @@ def main(page: ft.Page):
     page.add(main_column)
 
 
-ft.run(main)
+ft.run(main, view=ft.AppView.WEB_BROWSER)
