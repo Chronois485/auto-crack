@@ -5,27 +5,34 @@ import time
 
 from colored import Fore, Style, cprint
 
+from constants import (
+    AIRODUMP_CMD,
+    DEFAULT_SCAN_TIME_SECONDS,
+    SCAN_OUTPUT_PREFIX,
+    SCAN_OUTPUT_SUFFIX,
+)
+
 
 def scan_networks(iface, scan_time):
-    output_prefix = "/tmp/wifi_scan"
+    output_prefix = SCAN_OUTPUT_PREFIX
 
     cprint("[*] Starting Wi-Fi discovery...", "blue")
 
     process = subprocess.Popen(
-        ["airodump-ng", "--output-format", "csv", "-w", output_prefix, iface],
+        [AIRODUMP_CMD, "--output-format", "csv", "-w", output_prefix, iface],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
 
     try:
         if not scan_time or not scan_time.isnumeric():
-            scan_time = 15
+            scan_time = DEFAULT_SCAN_TIME_SECONDS
         time.sleep(int(scan_time))
     finally:
         process.terminate()
         process.wait()
 
-    csv_file = f"{output_prefix}-01.csv"
+    csv_file = f"{output_prefix}{SCAN_OUTPUT_SUFFIX}"
 
     if not os.path.exists(csv_file):
         cprint("[-] Scan results not found", "red")

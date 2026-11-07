@@ -4,6 +4,13 @@ import subprocess
 
 from colored import cprint
 
+from constants import (
+    AIRODUMP_CMD,
+    CAPTURE_OUTPUT_SUFFIX,
+    HANDSHAKE_MARKER,
+    PROCESS_READ_BUFFER_SIZE,
+)
+
 airodump_proc = None
 
 
@@ -19,7 +26,7 @@ def sniffing(iface, channel, bssid, output_prefix):
                 pass
 
     airodump_command = [
-        "airodump-ng",
+        AIRODUMP_CMD,
         "-c",
         str(channel),
         "--bssid",
@@ -36,7 +43,7 @@ def sniffing(iface, channel, bssid, output_prefix):
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
-            bufsize=1,
+            bufsize=PROCESS_READ_BUFFER_SIZE,
         )
         cprint("[*] Monitoring for incoming handshakes...", "blue")
 
@@ -47,9 +54,9 @@ def sniffing(iface, channel, bssid, output_prefix):
                     break
                 continue
 
-            if "WPA handshake:" in line:
+            if HANDSHAKE_MARKER in line:
                 clean_line = line.strip()
-                parts = clean_line.split("WPA handshake:")
+                parts = clean_line.split(HANDSHAKE_MARKER)
                 if len(parts) > 1:
                     mac_info = parts[1].strip().split()[0]
                     cprint(
@@ -64,5 +71,5 @@ def sniffing(iface, channel, bssid, output_prefix):
             airodump_proc.send_signal(signal.SIGINT)
             airodump_proc.wait()
 
-    target_file = f"{output_prefix}-01.cap"
+    target_file = f"{output_prefix}{CAPTURE_OUTPUT_SUFFIX}"
     return handshake_found, target_file

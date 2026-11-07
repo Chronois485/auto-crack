@@ -4,6 +4,8 @@ import sys
 
 from colored import Fore, Style, cprint
 
+from constants import AIRCRACK_CMD, DEFAULT_SCAN_TIME_SECONDS
+
 import packet_capture as pc
 import scanner
 from monitor import (
@@ -19,18 +21,18 @@ def main() -> None:
             print("[-] Error: This script must be run as a root (use sudo).")
             sys.exit(1)
 
-        IFACE = input(
+        iface = input(
             f"{Fore.magenta}[*] Please enter name of your wireless interface:"
             f" {Style.reset}"
         )
-        SCAN_TIME = input(
+        scan_time = input(
             f"{Fore.magenta}[*] Please enter scan time in seconds (default is 15):"
             f" {Style.reset}"
         )
 
-        configure_monitor_mode(IFACE)
+        configure_monitor_mode(iface)
 
-        networks = scanner.scan_networks(IFACE, SCAN_TIME)
+        networks = scanner.scan_networks(iface, scan_time)
 
         scanner.display_networks(networks)
 
@@ -39,13 +41,13 @@ def main() -> None:
         if not network:
             sys.exit(1)
 
-        CHANNEL = network.get("channel")
-        OUTPUT_PREFIX = network.get("ssid")
-        BSSID = network.get("bssid")
+        channel = network.get("channel")
+        output_prefix = network.get("ssid")
+        bssid = network.get("bssid")
 
-        configure_fixed_channel(IFACE, CHANNEL)
+        configure_fixed_channel(iface, channel)
 
-        success, capture_file = pc.sniffing(IFACE, CHANNEL, BSSID, OUTPUT_PREFIX)
+        success, capture_file = pc.sniffing(iface, channel, bssid, output_prefix)
 
         if success and os.path.exists(capture_file):
             print(
@@ -68,7 +70,7 @@ def main() -> None:
                 print(f"\n{Fore.cyan}[*] Launching aircrack-ng session...{Style.reset}")
                 try:
                     subprocess.run(
-                        ["aircrack-ng", "-w", wordlist, capture_file], check=False
+                        [AIRCRACK_CMD, "-w", wordlist, capture_file], check=False
                     )
                 except FileNotFoundError:
                     print(
@@ -86,7 +88,7 @@ def main() -> None:
         cprint("\n[*] Ctrl+C detected! Stopping airodump-ng safely...", "blue")
     finally:
         cprint("\n[*] Cleaning up and restoring system network settings...", "blue")
-        configure_default_mode(IFACE)
+        configure_default_mode(iface)
 
 
 if __name__ == "__main__":
