@@ -9,6 +9,7 @@ from constants import (
     WINDOW_WIDTH,
 )
 from monitor import configure_default_mode, configure_monitor_mode, get_mode
+from scanner import scan_networks
 
 
 def main(page: ft.Page):
@@ -35,6 +36,7 @@ def main(page: ft.Page):
         current_adapter_mode_text.value = f"Interface mode: {mode.capitalize()}"
         start_scan_button.disabled = get_mode(adapter_field.value) != "monitor"
         mode_toggle.disabled = mode != "monitor" and mode != "managed"
+        mode_toggle.value = mode == "monitor"
         page.update()
 
     def handle_switch_mode_change(e):
@@ -48,27 +50,90 @@ def main(page: ft.Page):
         start_scan_button.disabled = mode != "monitor"
         page.update()
 
-    title_text = ft.Text(APP_TITLE, text_align=ft.TextAlign.CENTER, size=42)
+    def handle_scan_button(e):
+        data_container_column.controls = [
+            ft.Text(
+                "Scanning...",
+                color=ft.Colors.ON_PRIMARY_CONTAINER,
+                text_align=ft.TextAlign.CENTER,
+                size=20,
+                width=450,
+            )
+        ]
+        page.update()
+        networks = scan_networks(adapter_field.value, "15")
+
+        network_radio_buttons = []
+
+        for network in networks:
+            network_radio_buttons.append(
+                ft.Radio(
+                    value=network,
+                    label=network["ssid"] or "<Hidden SSID>",
+                    tooltip=f"SSID: {network['ssid'] or '<Hidden SSID>'}\n"
+                    + "Channel: {network['channel']}\n"
+                    + "BSSID: {network['bssid']}\n"
+                    + "Security: {network['privacy']}",
+                    label_style=ft.TextStyle(color=ft.Colors.ON_PRIMARY_CONTAINER),
+                )
+            )
+
+        networks_group.content = ft.Column(network_radio_buttons)
+
+        content = ft.Column(
+            controls=[
+                ft.Text(
+                    "Scan complete!",
+                    color=ft.Colors.ON_PRIMARY_CONTAINER,
+                    text_align=ft.TextAlign.CENTER,
+                    size=20,
+                    width=450,
+                ),
+                ft.Text("Select network:", color=ft.Colors.ON_PRIMARY_CONTAINER),
+                networks_group,
+                ft.Button(
+                    key="basic_submit_button",
+                    content="Submit",
+                    on_click=handle_network_choice,
+                ),
+            ]
+        )
+        data_container_column.controls = content
+        page.update()
+
+    def handle_network_choice(e):
+        print(networks_group.value)
+
+    title_text = ft.Text(
+        APP_TITLE,
+        text_align=ft.TextAlign.CENTER,
+        size=42,
+        font_family_fallback="Monospace",
+    )
 
     adapter_field = ft.TextField(
         value="",
         hint_text="wlan0",
         label="Interface",
-        text_style=ft.TextStyle(size=18),
-        hint_style=ft.TextStyle(size=18),
-        label_style=ft.TextStyle(size=18),
+        text_style=ft.TextStyle(size=18, font_family_fallback="Monospace"),
+        hint_style=ft.TextStyle(size=18, font_family_fallback="Monospace"),
+        label_style=ft.TextStyle(size=18, font_family_fallback="Monospace"),
         on_submit=handle_adapter_field_change,
     )
     current_adapter_mode_text = ft.Text(
         f"Interface mode: {get_mode(adapter_field.value)}",
         size=18,
         text_align=ft.TextAlign.CENTER,
+        font_family_fallback="Monospace",
     )
+
+    networks_group = ft.RadioGroup(None)
 
     start_scan_button = ft.Button(
         content="Start scan",
         icon=ft.Icons.WIFI_FIND,
         disabled=True,
+        on_click=handle_scan_button,
     )
 
     mode_toggle = ft.Switch(
@@ -80,7 +145,7 @@ def main(page: ft.Page):
 
     button_row = ft.Row([start_scan_button, mode_toggle], alignment=HORIZONTAL_ALIGMENT)
 
-    underline = ft.Divider(thickness=2)
+    underline = ft.Divider(thickness=2, color=ft.Colors.ON_SURFACE)
 
     data_container_column = ft.Column([], scroll=ft.ScrollMode.AUTO)
 
@@ -90,6 +155,7 @@ def main(page: ft.Page):
         height=400,
         bgcolor=ft.Colors.ON_PRIMARY,
         border_radius=10,
+        padding=20,
     )
 
     main_column = ft.Column(
@@ -107,7 +173,15 @@ def main(page: ft.Page):
         horizontal_alignment=HORIZONTAL_ALIGMENT,
     )
 
-    page.add(main_column)
+    page.add(
+        ft.Container(
+            main_column,
+            width=WINDOW_WIDTH,
+            height=WINDOW_HEIGHT,
+            border_radius=20,
+            border=ft.Border.all(width=2, color=ft.Colors.ON_SURFACE),
+        )
+    )
 
 
 ft.run(main, view=ft.AppView.WEB_BROWSER)
