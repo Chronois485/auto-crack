@@ -4,12 +4,10 @@ import subprocess
 
 from colored import cprint
 
-from monitor import configure_default_mode
-
 airodump_proc = None
 
 
-def sniffing(iface, channel, output_prefix):
+def sniffing(iface, channel, bssid, output_prefix):
     global airodump_proc
     cprint(f"\n[*] Launching airodump-ng core capture engine on {iface}...", "blue")
 
@@ -24,6 +22,8 @@ def sniffing(iface, channel, output_prefix):
         "airodump-ng",
         "-c",
         str(channel),
+        "--bssid",
+        bssid,
         "-w",
         output_prefix,
         iface,
@@ -58,15 +58,11 @@ def sniffing(iface, channel, output_prefix):
                     )
                     handshake_found = True
                     break
-
-    except KeyboardInterrupt:
-        cprint("\n[*] Ctrl+C detected! Stopping airodump-ng safely...", "blue")
     finally:
-        cprint("\n[*] Cleaning up and restoring system network settings...", "blue")
+        print("asdasf")
         if airodump_proc:
             airodump_proc.send_signal(signal.SIGINT)
             airodump_proc.wait()
-        configure_default_mode(iface)
 
     target_file = f"{output_prefix}-01.cap"
     return handshake_found, target_file

@@ -6,7 +6,7 @@ from colored import cprint
 from commands import run_command
 
 
-def configure_monitor_mode(iface, channel):
+def configure_monitor_mode(iface):
     cprint("[*] Killing conflicting network processes...", "blue")
     try:
         subprocess.run(["airmon-ng", "check", "kill"], capture_output=True, check=False)
@@ -26,11 +26,8 @@ def configure_monitor_mode(iface, channel):
     run_command(["ip", "link", "set", iface, "up"])
     time.sleep(2)
 
-    cprint(f"[*] Locking {iface} to channel {channel}...", "blue")
-    run_command(["iw", "dev", iface, "set", "channel", str(channel)])
-
     cprint(
-        f"[+] Successfully configured {iface} in monitor mode on channel {channel}!",
+        f"[+] Successfully configured {iface} in monitor mode!",
         "green",
     )
 
@@ -51,3 +48,10 @@ def configure_default_mode(iface):
     )
 
     cprint(f"[+] Successfully configured {iface} in managed mode!", "green")
+
+
+def configure_fixed_channel(iface, channel):
+    cprint(f"[*] Locking {iface} to channel {channel}...", "blue")
+    run_command(["iw", "dev", iface, "set", "channel", channel])
+
+    cprint(f"[+] Successfully configured {iface} to channel {channel}!", "green")
