@@ -1,4 +1,4 @@
-"""Shared configuration constants for Cookie Cracker."""
+import flet as ft
 
 # External command names
 AIRODUMP_CMD = "airodump-ng"
@@ -30,3 +30,6 @@ PROCESS_READ_BUFFER_SIZE = 1
 APP_TITLE = "Cookie Cracker"
 WINDOW_WIDTH = 600
 WINDOW_HEIGHT = 800
+VERTICAL_ALIGMENT = ft.MainAxisAlignment.START
+HORIZONTAL_ALIGMENT = ft.CrossAxisAlignment.CENTER
+FONT_FAMILY = "Space Mono"

@@ -4,10 +4,9 @@ import sys
 
 from colored import Fore, Style, cprint
 
-from constants import AIRCRACK_CMD, DEFAULT_SCAN_TIME_SECONDS
-
 import packet_capture as pc
 import scanner
+from constants import AIRCRACK_CMD
 from monitor import (
     configure_default_mode,
     configure_fixed_channel,
