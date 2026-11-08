@@ -1,10 +1,13 @@
 import json
+import os
 import re
+import subprocess
 import threading
 
 import flet as ft
 
 from constants import (
+    AIRCRACK_CMD,
     APP_TITLE,
     FONT_FAMILY,
     HORIZONTAL_ALIGNMENT,
@@ -147,6 +150,70 @@ def main(page: ft.Page):
             status_text.value = msg
             page.update()
 
+        def start_aircrack(capture_file):
+            wordlist_field = ft.TextField(
+                label="Шлях до словника",
+                hint_text="/usr/share/wordlists/rockyou.txt",
+                text_style=ft.TextStyle(size=14, font_family_fallback="Monospace"),
+            )
+            crack_status = ft.Text("", color=ft.Colors.ON_PRIMARY_CONTAINER, size=14)
+
+            def run_crack(e):
+                wordlist = wordlist_field.value.strip()
+                if not wordlist or not os.path.exists(wordlist):
+                    crack_status.value = (
+                        "Помилка: файл словника не знайдено за цим шляхом."
+                    )
+                    page.update()
+                    return
+
+                crack_status.value = "Запуск aircrack-ng..."
+                start_crack_button.disabled = True
+                page.update()
+
+                def background_crack():
+                    try:
+                        res = subprocess.run(
+                            [AIRCRACK_CMD, "-w", wordlist, capture_file],
+                            capture_output=True,
+                            text=True,
+                            check=False,
+                        )
+                        if res.returncode == 0:
+                            crack_status.value = (
+                                f"Aircrack завершено успішно!\n{res.stdout[-400:]}"
+                            )
+                        else:
+                            crack_status.value = f"Завершено. Результат:\n{res.stderr[-300:] or res.stdout[-300:]}"
+                    except FileNotFoundError:
+                        crack_status.value = "Помилка: утиліту aircrack-ng не знайдено."
+
+                    start_crack_button.disabled = False
+                    page.update()
+
+                threading.Thread(target=background_crack, daemon=True).start()
+
+            start_crack_button = ft.Button(
+                content="Start Aircrack-ng",
+                icon=ft.Icons.PLAY_ARROW,
+                on_click=run_crack,
+            )
+
+            data_container_column.controls.extend(
+                [
+                    ft.Divider(),
+                    ft.Text(
+                        "Handshake успішно захоплено!",
+                        color=ft.Colors.GREEN,
+                        size=16,
+                    ),
+                    wordlist_field,
+                    start_crack_button,
+                    crack_status,
+                ]
+            )
+            page.update()
+
         def run_sniffing_background():
             update_status("Sniffing started...")
             success, target_file = sniffing(
@@ -156,10 +223,12 @@ def main(page: ft.Page):
                 callback_status=update_status,
             )
             stop_sniffing_button.disabled = True
-            if success:
+            if success and os.path.exists(target_file):
                 update_status(f"Sniffing completed! Handshake saved to {target_file}")
+                start_aircrack(target_file)
             else:
                 update_status("Sniffing finished or stopped.")
+
             adapter_field.disabled = False
             start_scan_button.disabled = False
             mode_toggle.disabled = False

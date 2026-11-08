@@ -76,8 +76,6 @@ def sniffing(
                     break
                 continue
 
-            print(line.strip())
-
             if HANDSHAKE_MARKER in line:
                 clean_line = line.strip()
                 parts = clean_line.split(HANDSHAKE_MARKER)
