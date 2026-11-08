@@ -14,7 +14,7 @@ from constants import (
 airodump_proc = None
 
 
-def sniffing(iface, channel, bssid, output_prefix):
+async def sniffing(iface, channel, bssid, output_prefix):
     global airodump_proc
     cprint(f"\n[*] Launching airodump-ng core capture engine on {iface}...", "blue")
 
@@ -66,7 +66,6 @@ def sniffing(iface, channel, bssid, output_prefix):
                     handshake_found = True
                     break
     finally:
-        print("asdasf")
         if airodump_proc:
             airodump_proc.send_signal(signal.SIGINT)
             airodump_proc.wait()

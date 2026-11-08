@@ -3,8 +3,8 @@ import flet as ft
 from constants import (
     APP_TITLE,
     FONT_FAMILY,
-    HORIZONTAL_ALIGMENT,
-    VERTICAL_ALIGMENT,
+    HORIZONTAL_ALIGNMENT,
+    VERTICAL_ALIGNMENT,
     WINDOW_HEIGHT,
     WINDOW_WIDTH,
 )
@@ -20,8 +20,8 @@ def main(page: ft.Page):
     page.window.height = WINDOW_HEIGHT
     page.window.max_height = WINDOW_HEIGHT
     page.window.min_height = WINDOW_HEIGHT
-    page.vertical_alignment = VERTICAL_ALIGMENT
-    page.horizontal_alignment = HORIZONTAL_ALIGMENT
+    page.vertical_alignment = VERTICAL_ALIGNMENT
+    page.horizontal_alignment = HORIZONTAL_ALIGNMENT
     page.theme_mode = ft.ThemeMode.DARK
     page.dark_theme = ft.Theme(
         font_family=FONT_FAMILY,
@@ -143,7 +143,9 @@ def main(page: ft.Page):
         on_change=handle_switch_mode_change,
     )
 
-    button_row = ft.Row([start_scan_button, mode_toggle], alignment=HORIZONTAL_ALIGMENT)
+    button_row = ft.Row(
+        [start_scan_button, mode_toggle], alignment=HORIZONTAL_ALIGNMENT
+    )
 
     underline = ft.Divider(thickness=2, color=ft.Colors.ON_SURFACE)
 
@@ -170,7 +172,7 @@ def main(page: ft.Page):
             ft.Container(height=10),
             data_container,
         ],
-        horizontal_alignment=HORIZONTAL_ALIGMENT,
+        horizontal_alignment=HORIZONTAL_ALIGNMENT,
     )
 
     page.add(
