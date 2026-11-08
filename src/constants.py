@@ -21,7 +21,8 @@ DEFAULT_SCAN_TIME_SECONDS = 15
 SCAN_OUTPUT_PREFIX = "/tmp/wifi_scan"
 SCAN_OUTPUT_SUFFIX = "-01.csv"
 
-# Packet capture
+# Packet capture/Sniffing
+CAPTURE_OUTPUT_PREFIX = "/tmp/wifi_capture"
 CAPTURE_OUTPUT_SUFFIX = "-01.cap"
 HANDSHAKE_MARKER = "WPA handshake:"
 PROCESS_READ_BUFFER_SIZE = 1

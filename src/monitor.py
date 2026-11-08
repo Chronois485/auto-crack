@@ -96,6 +96,3 @@ def configure_fixed_channel(iface, channel):
     run_command([IW_CMD, "dev", iface, "set", "channel", channel])
 
     cprint(f"[+] Successfully configured {iface} to channel {channel}!", "green")
-
-
-get_mode("wlan0")

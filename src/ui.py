@@ -1,3 +1,7 @@
+import json
+import re
+import threading
+
 import flet as ft
 
 from constants import (
@@ -9,6 +13,7 @@ from constants import (
     WINDOW_WIDTH,
 )
 from monitor import configure_default_mode, configure_monitor_mode, get_mode
+from packet_capture import sniffing, stop_sniff_process
 from scanner import scan_networks
 
 
@@ -61,7 +66,7 @@ def main(page: ft.Page):
             )
         ]
         page.update()
-        networks = scan_networks(adapter_field.value, "15")
+        networks = scan_networks(adapter_field.value, "10")
 
         network_radio_buttons = []
 
@@ -71,9 +76,9 @@ def main(page: ft.Page):
                     value=network,
                     label=network["ssid"] or "<Hidden SSID>",
                     tooltip=f"SSID: {network['ssid'] or '<Hidden SSID>'}\n"
-                    + "Channel: {network['channel']}\n"
-                    + "BSSID: {network['bssid']}\n"
-                    + "Security: {network['privacy']}",
+                    f"Channel: {network['channel']}\n"
+                    f"BSSID: {network['bssid']}\n"
+                    f"Security: {network['privacy']}",
                     label_style=ft.TextStyle(color=ft.Colors.ON_PRIMARY_CONTAINER),
                 )
             )
@@ -92,8 +97,7 @@ def main(page: ft.Page):
                 ft.Text("Select network:", color=ft.Colors.ON_PRIMARY_CONTAINER),
                 networks_group,
                 ft.Button(
-                    key="basic_submit_button",
-                    content="Submit",
+                    content="Submit & Sniff",
                     on_click=handle_network_choice,
                 ),
             ]
@@ -102,7 +106,66 @@ def main(page: ft.Page):
         page.update()
 
     def handle_network_choice(e):
-        print(networks_group.value)
+        adapter_field.disabled = True
+        start_scan_button.disabled = True
+        mode_toggle.disabled = True
+        raw_value = networks_group.value
+        cleaned_value = re.sub(r"([{,]\s*)([a-zA-Z0-9_]+)\s*:", r'\1"\2":', raw_value)
+        cleaned_value = re.sub(
+            r":\s*([a-zA-Z0-9_:.-]+)(?=\s*[,}])", r': "\1"', cleaned_value
+        )
+
+        selected_network = json.loads(cleaned_value)
+
+        if not selected_network:
+            return
+
+        status_text = ft.Text(
+            "Starting sniffing process...",
+            color=ft.Colors.ON_PRIMARY_CONTAINER,
+            text_align=ft.TextAlign.CENTER,
+            size=16,
+        )
+
+        def stop_sniffing(e):
+            stop_sniff_process()
+            stop_sniffing_button.disabled = True
+            status_text.value = "Sniffing manually stopped."
+            adapter_field.disabled = False
+            start_scan_button.disabled = False
+            mode_toggle.disabled = False
+            page.update()
+
+        stop_sniffing_button = ft.Button(
+            content="Stop sniffing", icon=ft.Icons.STOP, on_click=stop_sniffing
+        )
+
+        data_container_column.controls = [status_text, stop_sniffing_button]
+        page.update()
+
+        def update_status(msg):
+            status_text.value = msg
+            page.update()
+
+        def run_sniffing_background():
+            update_status("Sniffing started...")
+            success, target_file = sniffing(
+                iface=adapter_field.value,
+                channel=selected_network["channel"],
+                bssid=selected_network["bssid"],
+                callback_status=update_status,
+            )
+            stop_sniffing_button.disabled = True
+            if success:
+                update_status(f"Sniffing completed! Handshake saved to {target_file}")
+            else:
+                update_status("Sniffing finished or stopped.")
+            adapter_field.disabled = False
+            start_scan_button.disabled = False
+            mode_toggle.disabled = False
+            page.update()
+
+        threading.Thread(target=run_sniffing_background, daemon=True).start()
 
     title_text = ft.Text(
         APP_TITLE,
@@ -149,10 +212,12 @@ def main(page: ft.Page):
 
     underline = ft.Divider(thickness=2, color=ft.Colors.ON_SURFACE)
 
-    data_container_column = ft.Column([], scroll=ft.ScrollMode.AUTO)
+    data_container_column = ft.Column(
+        [], scroll=ft.ScrollMode.AUTO, horizontal_alignment=HORIZONTAL_ALIGNMENT
+    )
 
     data_container = ft.Container(
-        data_container_column,
+        content=data_container_column,
         width=450,
         height=400,
         bgcolor=ft.Colors.ON_PRIMARY,
@@ -177,7 +242,7 @@ def main(page: ft.Page):
 
     page.add(
         ft.Container(
-            main_column,
+            content=main_column,
             width=WINDOW_WIDTH,
             height=WINDOW_HEIGHT,
             border_radius=20,
